@@ -13,6 +13,7 @@ html{scroll-behavior:smooth}
 body{margin:0;background:var(--cream);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
 a{color:inherit;text-decoration:none}
 button{font:inherit}
+[hidden]{display:none!important}
 header{background:#101716;color:white;padding:17px 20px;display:flex;align-items:center;justify-content:space-between;gap:15px}
 .brand{font-size:12px;letter-spacing:.13em;font-weight:800}
 .brand small{display:block;color:#e5bb65;font-size:9px;margin-top:5px;letter-spacing:.15em}
@@ -107,7 +108,7 @@ footer a{display:inline-block;margin-top:8px}
 <button type="button" class="gate-reset" id="resetGate">Tor erneut ansehen ↺</button>
 </section>
 
-<section id="entdecken">
+<section id="entdecken" hidden>
 <div class="intro">
 <div class="eyebrow">DEIN WEG BEGINNT HIER</div>
 <h2>Entdecke deine ICS-Welt</h2>
@@ -173,7 +174,7 @@ footer a{display:inline-block;margin-top:8px}
 <p class="note">Gestaltungsentwurf: Die Bildmotive stammen aus dem bisherigen Portalentwurf. Die Originalbilder und die noch fehlenden direkten Zielseiten werden vor der Veröffentlichung abgeglichen.</p>
 </section>
 </main>
-<footer>
+<footer id="portalFooter" hidden>
 INNER CODE SYSTEMS · Dein innerer Code. Deine Richtung.
 <p>
 <a href="https://www.innercodesystems.com/">Startseite</a>
@@ -183,37 +184,63 @@ INNER CODE SYSTEMS · Dein innerer Code. Deine Richtung.
 </footer>
 <script>
 (()=>{
-const b=document.getElementById('openGate'),g=document.getElementById('gate'),t=document.getElementById('entdecken');
-let busy=false;
+const b=document.getElementById('openGate');
+const g=document.getElementById('gate');
+const t=document.getElementById('entdecken');
 const reset=document.getElementById('resetGate');
-document.querySelectorAll('[data-pending-link]').forEach(a=>a.addEventListener('click',e=>{
-e.preventDefault();
-alert('Diese ICS-Unterseite wird vor der Veröffentlichung noch direkt verlinkt.');
-}));
-reset.addEventListener('click',()=>{
-busy=false;
-b.disabled=false;
-b.textContent='Das Tor öffnen →';
-g.classList.remove('open','enter');
-reset.classList.remove('visible');
-document.querySelector('.hero').scrollIntoView({behavior:'smooth'});
+const footer=document.getElementById('portalFooter');
+let busy=false;
+let timers=[];
+
+function schedule(fn,delay){
+  const id=setTimeout(fn,delay);
+  timers.push(id);
+}
+
+document.querySelectorAll('[data-pending-link]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    alert('Diese ICS-Unterseite wird vor der Veröffentlichung noch direkt verlinkt.');
+  });
 });
+
+reset.addEventListener('click',()=>{
+  timers.forEach(clearTimeout);
+  timers=[];
+  busy=false;
+  b.disabled=false;
+  b.textContent='Das Tor öffnen →';
+  g.classList.remove('open','enter');
+  reset.classList.remove('visible');
+  t.hidden=true;
+  footer.hidden=true;
+  window.scrollTo({top:0,behavior:'instant'});
+});
+
 b.addEventListener('click',()=>{
-if(busy)return;
-busy=true;
-b.disabled=true;
-b.textContent='Das Tor öffnet sich …';
-g.classList.add('open');
-let reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-setTimeout(()=>{
-if(!reduced)g.classList.add('enter');
-setTimeout(()=>{
-t.scrollIntoView({behavior:reduced?'auto':'smooth'});
-b.textContent='Willkommen in deiner ICS-Welt';
-reset.classList.add('visible');
-},reduced?0:750)
-},reduced?100:2200)
-})
+  if(busy)return;
+  busy=true;
+  b.disabled=true;
+  b.textContent='Das Tor öffnet sich …';
+  g.classList.add('open');
+
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  schedule(()=>{
+    if(!reduced)g.classList.add('enter');
+
+    schedule(()=>{
+      t.hidden=false;
+      footer.hidden=false;
+      b.textContent='Willkommen in deiner ICS-Welt';
+      reset.classList.add('visible');
+
+      requestAnimationFrame(()=>{
+        t.scrollIntoView({behavior:reduced?'auto':'smooth'});
+      });
+    },reduced?0:750);
+  },reduced?100:2200);
+});
 })();
 </script>
 </body>
